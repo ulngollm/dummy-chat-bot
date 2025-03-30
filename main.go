@@ -50,10 +50,9 @@ func main() {
 		return
 	}
 
-	bot.Handle(tele.OnText, greet)
-	bot.Handle(tele.OnText, ask)
-	bot.Handle(tele.OnText, closeChat)
-	bot.Handle(tele.OnText, askFeedback)
+	sessionHandler = NewSessionHandler()
+
+	bot.Handle(tele.OnText, greet, closeChat, askFeedback, ask)
 
 	bot.Start()
 }
@@ -63,54 +62,66 @@ func greet(c tele.Context) error {
 	if err != nil {
 		return err
 	}
-	if !session.FSM.Can(eventGreet) {
-		return nil
+	evt := eventGreet
+	if !session.FSM.Can(evt) {
+		if err := session.FSM.Event(context.Background(), eventClose); err != nil {
+			return err
+		}
 	}
-	if err := session.FSM.Event(context.Background(), eventGreet); err != nil {
+	if err := session.FSM.Event(context.Background(), evt); err != nil {
 		return err
 	}
 	return c.Send("Добрый день! О чем вы хотите узнать?")
 }
 
-func ask(c tele.Context) error {
-	session, err := sessionHandler.getSession(c.Chat().ID)
-	if err != nil {
-		return err
+func ask(next tele.HandlerFunc) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		session, err := sessionHandler.getSession(c.Chat().ID)
+		if err != nil {
+			return err
+		}
+		evt := eventAskQuestion
+		if !session.FSM.Can(evt) {
+			return next(c)
+		}
+		if err := session.FSM.Event(context.Background(), evt); err != nil {
+			return err
+		}
+		return c.Send("Мы передали ваш вопрос")
 	}
-	if !session.FSM.Can(eventAskQuestion) {
-		return nil
-	}
-	if err := session.FSM.Event(context.Background(), eventAskFeedback); err != nil {
-		return err
-	}
-	return c.Send("Мы передали ваш вопрос")
 }
 
-func askFeedback(c tele.Context) error {
-	session, err := sessionHandler.getSession(c.Chat().ID)
-	if err != nil {
-		return err
+func askFeedback(next tele.HandlerFunc) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		session, err := sessionHandler.getSession(c.Chat().ID)
+		if err != nil {
+			return err
+		}
+		evt := eventAskFeedback
+		if !session.FSM.Can(evt) {
+			return next(c)
+		}
+		//todo use context with cancel
+		if err := session.FSM.Event(context.Background(), evt); err != nil {
+			return err
+		}
+		return c.Send("Напишите нам оценку пжаста")
 	}
-	if !session.FSM.Can("ask") {
-		return nil
-	}
-	if err := session.FSM.Event(context.Background(), eventAskFeedback); err != nil {
-		return err
-	}
-	return c.Send("Напишите нам оценку пжаста")
 }
 
-func closeChat(c tele.Context) error {
-	session, err := sessionHandler.getSession(c.Chat().ID)
-	if err != nil {
-		return err
-	}
-	if !session.FSM.Can("ask") {
-		return nil
-	}
-	if err := session.FSM.Event(context.Background(), eventClose); err != nil {
-		return err
-	}
+func closeChat(next tele.HandlerFunc) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		session, err := sessionHandler.getSession(c.Chat().ID)
+		if err != nil {
+			return err
+		}
+		if !session.FSM.Can(eventClose) {
+			return next(c)
+		}
+		if err := session.FSM.Event(context.Background(), eventClose); err != nil {
+			return err
+		}
 
-	return c.Send("Чат закрыт. Вы можете задать свой вопрос снова")
+		return c.Send("Чат закрыт. Вы можете задать свой вопрос снова")
+	}
 }

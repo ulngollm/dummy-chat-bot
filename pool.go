@@ -4,6 +4,12 @@ type Pool struct {
 	data map[int64]*Session
 }
 
+func NewPool() Pool {
+	return Pool{
+		data: make(map[int64]*Session),
+	}
+}
+
 func (p *Pool) AddToPool(session *Session) {
 	p.data[session.userID] = session
 }

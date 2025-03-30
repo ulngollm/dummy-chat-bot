@@ -11,16 +11,22 @@ type SessionHandler struct {
 	pool Pool
 }
 
+func NewSessionHandler() SessionHandler {
+	return SessionHandler{pool: NewPool()}
+}
+
 func (h SessionHandler) getSession(userID int64) (*Session, error) {
 	if s, ok := h.pool.GetFromPool(userID); ok {
 		return s, nil
 	}
 
 	f := fsm.NewFSM(
-		stateWaitGreeting,
+		stateClosed,
 		fsm.Events{
-			{Name: "greet", Src: []string{stateWaitGreeting}, Dst: stateWaitQuestion},
-			{Name: "answer", Src: []string{stateWaitGreeting}, Dst: stateWaitQuestion},
+			{Name: eventGreet, Src: []string{stateClosed}, Dst: stateWaitGreeting},
+			{Name: eventAskQuestion, Src: []string{stateWaitGreeting}, Dst: stateWaitQuestion},
+			{Name: eventAskFeedback, Src: []string{stateWaitQuestion}, Dst: stateWaitFeedback},
+			{Name: eventClose, Src: []string{stateWaitFeedback}, Dst: stateClosed},
 		},
 		fsm.Callbacks{},
 	)
@@ -28,5 +34,6 @@ func (h SessionHandler) getSession(userID int64) (*Session, error) {
 		userID: userID,
 		FSM:    f,
 	}
+	h.pool.AddToPool(s)
 	return s, nil
 }
