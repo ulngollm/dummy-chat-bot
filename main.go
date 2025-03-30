@@ -1,12 +1,12 @@
 package main
 
 import (
-	"context"
-	"github.com/joho/godotenv"
-	tele "gopkg.in/telebot.v4"
 	"log"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
+	tele "gopkg.in/telebot.v4"
 )
 
 func init() {
@@ -18,20 +18,23 @@ func init() {
 }
 
 const (
-	stateWaitGreeting string = "greeting"
-	stateWaitQuestion string = "question"
-	stateClosed       string = "closed"
-	stateWaitFeedback string = "feedback"
+	stateGreeted         string = "greeting"
+	stateGetQuestion     string = "question"
+	stateClosed          string = "closed"
+	stateRequestFeedback string = "req_feedback"
+	stateGetFeedback     string = "get_feedback"
 )
 
 const (
-	eventGreet       string = "greet"
-	eventAskQuestion string = "answer"
-	eventClose       string = "closeChat"
-	eventAskFeedback string = "feedback"
+	eventGreet           string = "greet"
+	eventAskQuestion     string = "answer"
+	eventClose           string = "closeChat"
+	eventAskFeedback     string = "feedback"
+	eventCollectFeedback string = "collect"
 )
 
 var sessionHandler SessionHandler
+var stateManager *StateManager
 
 func main() {
 	t, ok := os.LookupEnv("BOT_TOKEN")
@@ -51,77 +54,17 @@ func main() {
 	}
 
 	sessionHandler = NewSessionHandler()
+	stateManager = NewStateManager()
 
-	bot.Handle(tele.OnText, greet, closeChat, askFeedback, ask)
+	bot.Handle(tele.OnText, handle)
 
 	bot.Start()
 }
 
-func greet(c tele.Context) error {
-	session, err := sessionHandler.getSession(c.Chat().ID)
+func handle(c tele.Context) error {
+	handler, err := stateManager.GetHandlerForCurrentState(c.Chat().ID)
 	if err != nil {
 		return err
 	}
-	evt := eventGreet
-	if !session.FSM.Can(evt) {
-		if err := session.FSM.Event(context.Background(), eventClose); err != nil {
-			return err
-		}
-	}
-	if err := session.FSM.Event(context.Background(), evt); err != nil {
-		return err
-	}
-	return c.Send("Добрый день! О чем вы хотите узнать?")
-}
-
-func ask(next tele.HandlerFunc) tele.HandlerFunc {
-	return func(c tele.Context) error {
-		session, err := sessionHandler.getSession(c.Chat().ID)
-		if err != nil {
-			return err
-		}
-		evt := eventAskQuestion
-		if !session.FSM.Can(evt) {
-			return next(c)
-		}
-		if err := session.FSM.Event(context.Background(), evt); err != nil {
-			return err
-		}
-		return c.Send("Мы передали ваш вопрос")
-	}
-}
-
-func askFeedback(next tele.HandlerFunc) tele.HandlerFunc {
-	return func(c tele.Context) error {
-		session, err := sessionHandler.getSession(c.Chat().ID)
-		if err != nil {
-			return err
-		}
-		evt := eventAskFeedback
-		if !session.FSM.Can(evt) {
-			return next(c)
-		}
-		//todo use context with cancel
-		if err := session.FSM.Event(context.Background(), evt); err != nil {
-			return err
-		}
-		return c.Send("Напишите нам оценку пжаста")
-	}
-}
-
-func closeChat(next tele.HandlerFunc) tele.HandlerFunc {
-	return func(c tele.Context) error {
-		session, err := sessionHandler.getSession(c.Chat().ID)
-		if err != nil {
-			return err
-		}
-		if !session.FSM.Can(eventClose) {
-			return next(c)
-		}
-		if err := session.FSM.Event(context.Background(), eventClose); err != nil {
-			return err
-		}
-
-		return c.Send("Чат закрыт. Вы можете задать свой вопрос снова")
-	}
+	return handler(c)
 }

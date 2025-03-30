@@ -20,13 +20,15 @@ func (h SessionHandler) getSession(userID int64) (*Session, error) {
 		return s, nil
 	}
 
+	//todo вынести работу со стейтами в StateManager
 	f := fsm.NewFSM(
 		stateClosed,
 		fsm.Events{
-			{Name: eventGreet, Src: []string{stateClosed}, Dst: stateWaitGreeting},
-			{Name: eventAskQuestion, Src: []string{stateWaitGreeting}, Dst: stateWaitQuestion},
-			{Name: eventAskFeedback, Src: []string{stateWaitQuestion}, Dst: stateWaitFeedback},
-			{Name: eventClose, Src: []string{stateWaitFeedback}, Dst: stateClosed},
+			{Name: eventGreet, Src: []string{stateClosed}, Dst: stateGreeted},
+			{Name: eventAskQuestion, Src: []string{stateGreeted}, Dst: stateGetQuestion},
+			{Name: eventAskFeedback, Src: []string{stateGetQuestion}, Dst: stateRequestFeedback},
+			{Name: eventCollectFeedback, Src: []string{stateRequestFeedback}, Dst: stateClosed},
+			{Name: eventClose, Src: []string{stateRequestFeedback, stateGetFeedback}, Dst: stateClosed},
 		},
 		fsm.Callbacks{},
 	)
