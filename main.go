@@ -62,7 +62,12 @@ func main() {
 }
 
 func handle(c tele.Context) error {
-	handler, err := stateManager.GetHandlerForCurrentState(c.Chat().ID)
+	session, err := sessionHandler.getSession(c.Chat().ID)
+	if err != nil {
+		return err
+	}
+	c.Set("session", session)
+	handler, err := stateManager.GetHandlerForCurrentState(session.getCurrentState())
 	if err != nil {
 		return err
 	}

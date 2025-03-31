@@ -55,17 +55,12 @@ func askHandler(c tele.Context) error {
 }
 
 func askFeedbackHandler(c tele.Context) error {
-	session, err := sessionHandler.getSession(c.Chat().ID)
-	if err != nil {
-		return err
+	session := c.Get("session").(*Session)
+	e := eventAskFeedback
+	if !session.FSM.Can(e) {
+		return nil
 	}
-	evt := eventAskFeedback
-	if !session.FSM.Can(evt) {
-		return nil // No transition possible, return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-	if err := session.FSM.Event(ctx, evt); err != nil {
+	if err := session.FSM.Event(context.Background(), e); err != nil {
 		return err
 	}
 	go func() {
@@ -81,15 +76,12 @@ func askFeedbackHandler(c tele.Context) error {
 }
 
 func getFeedbackHandler(c tele.Context) error {
-	session, err := sessionHandler.getSession(c.Chat().ID)
-	if err != nil {
-		return err
+	session := c.Get("session").(*Session)
+	e := eventCollectFeedback
+	if !session.FSM.Can(e) {
+		return nil
 	}
-	evt := eventCollectFeedback
-	if !session.FSM.Can(evt) {
-		return nil // No transition possible, return
-	}
-	if err := session.FSM.Event(context.Background(), evt); err != nil {
+	if err := session.FSM.Event(context.Background(), e); err != nil {
 		return err
 	}
 	return c.Send("Спасибо за обратную связь!")
