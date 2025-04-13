@@ -40,32 +40,40 @@ func (r *FlowController) AskCategory(nextState string) tele.HandlerFunc {
 	}
 }
 
-func (r *FlowController) AskProduct(c tele.Context) error {
-	inner := func(context tele.Context) error {
-		return c.Send("назовите продукт")
+func (r *FlowController) AskProduct(nextState string) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		inner := func(context tele.Context) error {
+			return c.Send("назовите продукт")
+		}
+		return r.buildHandler(c, inner, nextState)(c)
 	}
-	return r.buildHandler(c, inner, StateAskedProduct)(c)
 }
 
-func (r *FlowController) AskDetails(c tele.Context) error {
-	inner := func(context tele.Context) error {
-		return c.Send("опишите, как воспроизвести ошибку")
+func (r *FlowController) AskDetails(nextState string) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		inner := func(context tele.Context) error {
+			return c.Send("опишите, как воспроизвести ошибку")
+		}
+		return r.buildHandler(c, inner, nextState)(c)
 	}
-	return r.buildHandler(c, inner, StateAskedDetails)(c)
 }
 
-func (r *FlowController) AskScreenshot(c tele.Context) error {
-	inner := func(context tele.Context) error {
-		return c.Send("приложите скриншот")
+func (r *FlowController) AskScreenshot(nextState string) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		inner := func(context tele.Context) error {
+			return c.Send("приложите скриншот")
+		}
+		return r.buildHandler(c, inner, nextState)(c)
 	}
-	return r.buildHandler(c, inner, StateAskedScreenshot)(c)
 }
 
-func (r *FlowController) Thank(c tele.Context) error {
-	inner := func(context tele.Context) error {
-		return c.Send("спасибо за обратную связь! мы передали ваше сообщение в поддержку")
+func (r *FlowController) Thank(nextState string) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		inner := func(context tele.Context) error {
+			return c.Send("спасибо за обратную связь! мы передали ваше сообщение в поддержку")
+		}
+		return r.buildHandler(c, inner, nextState)(c)
 	}
-	return r.buildHandler(c, inner, StateComplete)(c)
 }
 
 func (r *FlowController) buildHandler(

@@ -48,10 +48,10 @@ func run(token string) error {
 	newUserCtrl := feedback.New(flowManager)
 
 	ng := router.Group(feedback.FlowName)
-	ng.AddHandler(feedback.StateAskedCategory, newUserCtrl.AskProduct)
-	ng.AddHandler(feedback.StateAskedProduct, newUserCtrl.AskDetails)
-	ng.AddHandler(feedback.StateAskedDetails, newUserCtrl.AskScreenshot)
-	ng.AddHandler(feedback.StateAskedScreenshot, newUserCtrl.Thank)
+	ng.AddHandler(feedback.StateAskedCategory, newUserCtrl.AskProduct(feedback.StateAskedProduct))
+	ng.AddHandler(feedback.StateAskedProduct, newUserCtrl.AskDetails(feedback.StateAskedDetails))
+	ng.AddHandler(feedback.StateAskedDetails, newUserCtrl.AskScreenshot(feedback.StateAskedScreenshot))
+	ng.AddHandler(feedback.StateAskedScreenshot, newUserCtrl.Thank(feedback.StateComplete))
 
 	bot.Handle("/feedback", newUserCtrl.AskCategory(feedback.StateAskedCategory), newUserCtrl.Init)
 	bot.Handle(tele.OnText, handle, router.Middleware())
