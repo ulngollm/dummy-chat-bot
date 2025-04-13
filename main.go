@@ -53,7 +53,7 @@ func run(token string) error {
 	ng.AddHandler(feedback.StateAskedDetails, newUserCtrl.AskScreenshot)
 	ng.AddHandler(feedback.StateAskedScreenshot, newUserCtrl.Thank)
 
-	bot.Handle("/feedback", newUserCtrl.AskCategory, newUserCtrl.Init)
+	bot.Handle("/feedback", newUserCtrl.AskCategory(feedback.StateAskedCategory), newUserCtrl.Init)
 	bot.Handle(tele.OnText, handle, router.Middleware())
 
 	bot.Start()

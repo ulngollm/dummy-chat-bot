@@ -31,11 +31,13 @@ func (r *FlowController) Init(next tele.HandlerFunc) tele.HandlerFunc {
 	}
 }
 
-func (r *FlowController) AskCategory(c tele.Context) error {
-	inner := func(context tele.Context) error {
-		return c.Send("назовите категорию")
+func (r *FlowController) AskCategory(nextState string) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		inner := func(context tele.Context) error {
+			return c.Send("назовите категорию")
+		}
+		return r.buildHandler(c, inner, nextState)(c)
 	}
-	return r.buildHandler(c, inner, StateAskedCategory)(c)
 }
 
 func (r *FlowController) AskProduct(c tele.Context) error {
